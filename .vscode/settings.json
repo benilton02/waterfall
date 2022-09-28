@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "i2c.h": "c",
+        "gpio.h": "c",
+        "math.h": "c",
+        "_ansi.h": "c"
+    }
+}
