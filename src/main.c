@@ -14,12 +14,26 @@
 #define SDA_PIN GPIO_NUM_21
 #define SCL_PIN GPIO_NUM_22
 #define I2C_FREQUENCY 100000
+#define VCC_ADC 5000.0
+
+double calc_pH(MCP3008 *device){
+    double ph, voltage;
+    float calibration_factor = 21.34;
+
+    mcp3008_read(device, 1);
+
+    voltage = ((float) device->data / (float)(1<<device->bits)) * VCC_ADC;
+    ph = -5.70 * (voltage/1000) + calibration_factor;
+
+    ESP_LOGI("PH", "PH: %.2f, Voltage: %.2fmV, data: %d", ph, voltage, device->data);
+    return ph;
+}
 
 double calc_turbidez(MCP3008 *device){
     double voltage, ntu;
 
     mcp3008_read(device, 0);
-    voltage = ((float) device->data / (float)(1 << device->bits)) * 5000.0;
+    voltage = ((float) device->data / (float)(1 << device->bits)) * VCC_ADC;
 
     if ( voltage < 2500 ) {
         ntu = 3000;
@@ -45,6 +59,7 @@ void app_main(void){
     {   
         // calcula a turbidez da agua
         calc_turbidez(&device);
+        calc_pH(&device);
         vTaskDelay(1500/portTICK_PERIOD_MS);
     }
 }
