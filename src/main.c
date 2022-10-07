@@ -15,6 +15,26 @@
 #define SCL_PIN GPIO_NUM_22
 #define I2C_FREQUENCY 100000
 
+double calc_turbidez(MCP3008 *device){
+    double voltage, ntu;
+
+    mcp3008_read(device, 0);
+    voltage = ((float) device->data / (float)(1 << device->bits)) * 5000.0;
+
+    if ( voltage < 2500 ) {
+        ntu = 3000;
+    }
+    else if (voltage > 4200) {
+        ntu = 0;
+    }
+    else {
+        ntu = -1120.4 * pow(voltage/1000, 2) + 5742.3 * (voltage/1000) - 4352.8;
+    }
+
+    ESP_LOGI("TURBIDEZ", "NTU: %.2f, Voltage: %.2fmV, data: %d", ntu, voltage, device->data);
+    return ntu;
+}
+
 void app_main(void){
 
     MCP3008 device;
@@ -24,7 +44,7 @@ void app_main(void){
     while (1)
     {   
         // calcula a turbidez da agua
-        // calc_turbidez(&device);
+        calc_turbidez(&device);
         vTaskDelay(1500/portTICK_PERIOD_MS);
     }
 }
