@@ -12,12 +12,20 @@
 #include "mcp3008.h"
 #include "ds18b20.h"
 
+#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 
 #define SDA_PIN GPIO_NUM_21
 #define SCL_PIN GPIO_NUM_22
 #define I2C_FREQUENCY 100000
 #define VCC_ADC 5000.0
 #define TEMP_BUS 25
+#define OLED_RESET 4
+
+Adafruit_SSD1306 display(OLED_RESET);
+
 
 double calc_temperature(DeviceAddress *temp_sensors) {
 	float temp = ds18b20_get_temp();
@@ -59,6 +67,27 @@ double calc_turbidez(MCP3008 *device){
     return ntu;
 }
 
+void show_data(double turbidez,double ph, double temperature){
+    display.setCursor(0,2);
+    display.print("Temp: %2.f C", temperature);
+
+    display.setCursor(0,12);
+    display.print("PH: %2.f", ph); //7.01
+
+    display.setCursor(0,22);
+    display.print("NTU: %.f", turbidez); // 503
+  
+}
+
+void set_display(){
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  //Inicializa OLED com endereço I2C 0x3C (para 128x64)
+  display.clearDisplay();
+  display.display();
+  display.setTextSize(.5);
+  display.setTextColor(WHITE);
+
+}
+
 void app_main(void){
     DeviceAddress temp_sensors[MAX_DEVICE_BUS];
     MCP3008 device;
@@ -70,12 +99,15 @@ void app_main(void){
 	ds18b20_get_address(temp_sensors);
 	ds18b20_setResolution(temp_sensors, 2, 10);
 
+    set_display()
+
     while (1)
     {   
         // calcula a turbidez da agua
-        calc_turbidez(&device);
-        calc_pH(&device);
-        calc_temperature(temp_sensors);
+        turbidez = calc_turbidez(&device);
+        ph = calc_pH(&device);
+        temperature = calc_temperature(temp_sensors);
+        show_data(turbidez, ph, temperature)
         vTaskDelay(1500/portTICK_PERIOD_MS);
     }
 }
